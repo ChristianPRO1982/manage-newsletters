@@ -19,4 +19,10 @@ tool for compiling newsletters into a single one
 || [I/O API: OpenAI API](#io-api-openai-api) |
 </details>
 
-## Legend
+## .env
+```
+DEBUG=1
+
+EMAIL_ACCOUNT = "my_email@outlook.com"
+PASSWORD = "pwd"
+```
