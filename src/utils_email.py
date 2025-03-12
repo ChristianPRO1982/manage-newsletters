@@ -4,17 +4,24 @@ from email.policy import default
 
 
 class OutlookEmailFetcher:
-    def __init__(self, server, email_account, password, folder="INBOX"):
+    def __init__(self, logs, server, email_account, password, folder="INBOX"):
+        self.logs = logs
         self.server = server
         self.email_account = email_account
         self.password = password
         self.folder = folder
 
     def fetch_emails(self):
+        prefix = f'[{self.__class__.__name__} | fetch_emails]'
+
         try:
+            self.logs.logging_msg(f"{prefix} START", 'DEBUG')
+
             with IMAPClient(self.server) as client:
+                self.logs.logging_msg(f"{prefix} 1", 'DEBUG')
+
                 client.login(self.email_account, self.password)
-                print("[INFO] Connexion au serveur réussie.")
+                self.logs.logging_msg(f"{prefix} 2", 'DEBUG')
 
                 client.select_folder(self.folder)
                 messages = client.search(["ALL"])
@@ -35,4 +42,4 @@ class OutlookEmailFetcher:
                 print("[INFO] Emails récupérés avec succès.")
 
         except Exception as e:
-            print(f"[ERREUR] Problème lors de la récupération des emails : {e}")
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')

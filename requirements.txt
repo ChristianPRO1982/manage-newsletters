@@ -1,3 +1,4 @@
+python-dotenv
+pytest
 imapclient
 pyzmail36
-python-dotenv

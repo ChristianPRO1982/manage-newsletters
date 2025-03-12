@@ -1,15 +1,26 @@
-from utils_email import OutlookEmailFetcher
+import os
 import dotenv
+from utils_email import OutlookEmailFetcher
+from logs import Logs
 
 
 dotenv.load_dotenv(override=True)
+EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
+PASSWORD = os.getenv("PASSWORD")
 
 
 if __name__ == "__main__":
-    fetcher = OutlookEmailFetcher(
-        server="imap-mail.outlook.com",
-        email_account="email@outlook.com",
-        password="votre_mot_de_passe_application",
-        folder="Newsletter"
-    )
-    fetcher.fetch_emails()
+    logs = Logs()
+    if not logs.status:
+        logs.logging_msg("START PROGRAM", 'WARNING')
+
+        fetcher = OutlookEmailFetcher(
+            logs,
+            server="imap-mail.outlook.com",
+            email_account=EMAIL_ACCOUNT,
+            password=PASSWORD,
+            folder="Newsletter"
+        )
+        fetcher.fetch_emails()
+        
+        logs.logging_msg("END PROGRAM", 'WARNING')
