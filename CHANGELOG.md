@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/ChristianPRO1982/manage-newsletters/compare/v1.0.0...v1.0.1) (2025-03-17)
+
+
+### Bug Fixes
+
+* readme ([86d60da](https://github.com/ChristianPRO1982/manage-newsletters/commit/86d60daf5eae2b9d8a5be864b070042d84562af1))
+
 # 1.0.0 (2025-03-17)
 
 
