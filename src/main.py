@@ -1,6 +1,5 @@
 import os
 import dotenv
-from utils_email import MicrosoftGraphClient
 from logs import Logs
 from utils import Newsletter
 
@@ -13,10 +12,13 @@ if __name__ == "__main__":
     if not logs.status:
         logs.logging_msg("START PROGRAM", 'WARNING')
 
-        # Create an instance of OutlookMailFetcher
-        logs.logging_msg("MAIN.PY: Connexion")
-        client = MicrosoftGraphClient()
-        me = client.make_graph_request("/me")
+        newsletter = Newsletter(logs)
+
+        # 01 CONNECTION
+        client, error = newsletter.connexion()
+        if error:
+            logs.logging_msg(f"MAIN.PY: {error}", 'ERROR')
+            exit()
 
         # Fetch the latest emails
         logs.logging_msg("MAIN.PY: Fetching")
@@ -24,8 +26,10 @@ if __name__ == "__main__":
 
         # Create a newsletter
         logs.logging_msg("MAIN.PY: Creating newsletter")
-        newsletter = Newsletter()
         for mail in client.emails:
             newsletter.add_content(mail.to_html())
+        print(">>>>>")
+        print(newsletter.content)
+        print(">>>>>")
         
         logs.logging_msg("END PROGRAM", 'WARNING')

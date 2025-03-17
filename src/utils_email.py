@@ -1,10 +1,12 @@
+import requests
 import json
 import os
 from msal import PublicClientApplication
 
 
 class MicrosoftGraphClient:
-    def __init__(self):
+    def __init__(self, access_token="access_token"):
+        self.access_token = access_token
         self.client_id = os.getenv("AZURE_APP_APPLICATION_CLIENT_ID")
         self.tenant_id = "common"  # Replace with your tenant ID if necessary
         self.authority = f"https://login.microsoftonline.com/{self.tenant_id}"
@@ -21,11 +23,11 @@ class MicrosoftGraphClient:
         if os.path.exists(self.token_file):
             with open(self.token_file, "r") as f:
                 token_data = json.load(f)
-
-            if "access_token" in token_data:
+            
+            if "access_token" in self.access_token:
                 return token_data["access_token"]
 
-            if "refresh_token" in token_data:
+            if "refresh_token" in self.access_token:
                 new_token = self.app.acquire_token_by_refresh_token(token_data["refresh_token"], self.scopes)
                 if "access_token" in new_token:
                     self.save_token(new_token)
@@ -60,7 +62,7 @@ class MicrosoftGraphClient:
 
     def make_graph_request(self, endpoint):
         """Executes a request to Microsoft Graph."""
-        import requests
+        
         headers = {"Authorization": f"Bearer {self.access_token}"}
         response = requests.get(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers)
         return response.json()
@@ -68,7 +70,6 @@ class MicrosoftGraphClient:
 
     def make_graph_request_pages(self, endpoint):
         """Executes a request to the Microsoft Graph API with pagination handling."""
-        import requests
 
         headers = {"Authorization": f"Bearer {self.access_token}"}
         url = f"https://graph.microsoft.com/v1.0{endpoint}"
@@ -110,6 +111,43 @@ class MicrosoftGraphClient:
             if folder["displayName"] == folder_name:
                 return folder["id"]
         return None
+    
+
+    def send_email(self, subject, content, to_recipients):
+        """Sends an email using Microsoft Graph API."""
+
+        body = f"""
+<html>
+    <body>
+        <h2>{subject}</h2>
+        <p><strong>Received:</strong> {to_recipients}</p>
+        <p>{content}</p>
+    </body>
+</html>
+        """
+
+        endpoint = "/me/sendMail"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        email_msg = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "HTML",
+                    "content": body
+                },
+                "toRecipients": [{"emailAddress": {"address": recipient}} for recipient in to_recipients]
+            },
+            "saveToSentItems": "true"
+        }
+
+        response = requests.post(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers, json=email_msg)
+        if response.status_code == 202:
+            print("Email sent successfully.")
+        else:
+            print(f"Failed to send email: {response.status_code} - {response.text}")
 
 
 
@@ -123,14 +161,14 @@ class OutlookMail():
     
     def to_html(self):
         """Creates an HTML formatted text with all the email information."""
+
         html_content = f"""
-        <html>
-            <body>
-                <h2>{self.subject}</h2>
-                <p><strong>From:</strong> {self.name}</p>
-                <p><strong>Received:</strong> {self.receivedDateTime}</p>
-                <p>{self.bodyPreview}</p>
-            </body>
-        </html>
+    <div>
+        <h2>{self.subject}</h2>
+        <p><strong>From:</strong> {self.name}</p>
+        <p><strong>Received:</strong> {self.receivedDateTime}</p>
+        <p>{self.bodyPreview}</p>
+    </div>
         """
+        
         return html_content
