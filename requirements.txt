@@ -1,4 +1,4 @@
 python-dotenv
 pytest
-imapclient
-pyzmail36
+requests
+msal
