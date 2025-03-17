@@ -116,6 +116,11 @@ class MicrosoftGraphClient:
     def send_email(self, subject, body, to_recipients)->bool:
         """Sends an email using Microsoft Graph API."""
 
+        if isinstance(to_recipients, str):
+            to_recipients = [to_recipients]  # Convert to list if it's a single string
+        if not to_recipients or not all(isinstance(email, str) and "@" in email for email in to_recipients):
+            raise ValueError(f"Invalid recipients: {to_recipients}")
+
         endpoint = "/me/sendMail"
         headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -132,6 +137,9 @@ class MicrosoftGraphClient:
             },
             "saveToSentItems": "true"
         }
+
+        # print(f"[DEBUG] Payload envoyé : {json.dumps(email_msg, indent=2)}")  # Vérification
+
 
         response = requests.post(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers, json=email_msg)
         if response.status_code == 202 or response.status_code == 200:
