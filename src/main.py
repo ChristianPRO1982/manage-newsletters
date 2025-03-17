@@ -2,22 +2,16 @@ import os
 import dotenv
 from utils_email import MicrosoftGraphClient
 from logs import Logs
+from utils import Newsletter
 
 
 dotenv.load_dotenv(override=True)
-# EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
-# PASSWORD = os.getenv("PASSWORD")
-# CLIENT_ID = os.getenv("AZURE_APP_APPLICATION_CLIENT_ID")
-# TENANT_ID = os.getenv("AZURE_APP_DIRECTORY_TENANT_ID")
-# CLIENT_SECRET = os.getenv("AZURE_SECRET_VALUE")
 
 
 if __name__ == "__main__":
     logs = Logs()
     if not logs.status:
         logs.logging_msg("START PROGRAM", 'WARNING')
-
-        # TENANT_ID = "common"  # 'common' for personal Outlook accounts
 
         # Create an instance of OutlookMailFetcher
         logs.logging_msg("MAIN.PY: Connexion")
@@ -27,12 +21,11 @@ if __name__ == "__main__":
         # Fetch the latest emails
         logs.logging_msg("MAIN.PY: Fetching")
         client.read_mail_folder(client.folder_id_by_name("VEILLE"))
-        for email in client.emails:
-            logs.logging_msg(email.to_html())
-        # logs.logging_msg(emails)
 
-        # Send an email
-        # response = outlook.send_email("recipient@example.com", "Test Subject", "This is a test email.")
-        # print(response)
+        # Create a newsletter
+        logs.logging_msg("MAIN.PY: Creating newsletter")
+        newsletter = Newsletter()
+        for mail in client.emails:
+            newsletter.add_content(mail.to_html())
         
         logs.logging_msg("END PROGRAM", 'WARNING')
