@@ -5,6 +5,8 @@ tool for compiling newsletters into a single one
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/ChristianPRO1982/ai-subject-monitoring-project.svg)](https://github.com/ChristianPRO1982/ai-subject-monitoring-project/blob/main/LICENSE)
 
+[Flowchart](https://github.com/ChristianPRO1982/ai-subject-monitoring-project?tab=readme-ov-file#MN-flowchart)
+
 <details>
   <summary><strong>📌 Table of Contents</strong></summary>
 

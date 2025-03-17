@@ -1,38 +1,136 @@
-from imapclient import IMAPClient
-import email
-from email.policy import default
+import json
+import os
+from msal import PublicClientApplication
 
 
-class OutlookEmailFetcher:
-    def __init__(self, server, email_account, password, folder="INBOX"):
-        self.server = server
-        self.email_account = email_account
-        self.password = password
-        self.folder = folder
+class MicrosoftGraphClient:
+    def __init__(self):
+        self.client_id = os.getenv("AZURE_APP_APPLICATION_CLIENT_ID")
+        self.tenant_id = "common"  # Replace with your tenant ID if necessary
+        self.authority = f"https://login.microsoftonline.com/{self.tenant_id}"
+        self.scopes = ["https://graph.microsoft.com/.default"]
+        self.token_file = "token.json"
+        self.app = PublicClientApplication(self.client_id, authority=self.authority)
+        self.access_token = self.load_token()
+        self.folders = self.list_mail_folders()
+        self.emails = []
 
-    def fetch_emails(self):
-        try:
-            with IMAPClient(self.server) as client:
-                client.login(self.email_account, self.password)
-                print("[INFO] Connexion au serveur réussie.")
 
-                client.select_folder(self.folder)
-                messages = client.search(["ALL"])
+    def load_token(self):
+        """Loads a valid token or requests authentication if necessary."""
+        if os.path.exists(self.token_file):
+            with open(self.token_file, "r") as f:
+                token_data = json.load(f)
 
-                for msg_id in messages:
-                    msg_data = client.fetch([msg_id], ["RFC822"])
-                    msg_bytes = msg_data[msg_id][b'RFC822']
-                    msg = email.message_from_bytes(msg_bytes, policy=default)
+            if "access_token" in token_data:
+                return token_data["access_token"]
 
-                    print(f"Sujet : {msg['Subject']}")
-                    print(f"De : {msg['From']}")
+            if "refresh_token" in token_data:
+                new_token = self.app.acquire_token_by_refresh_token(token_data["refresh_token"], self.scopes)
+                if "access_token" in new_token:
+                    self.save_token(new_token)
+                    return new_token["access_token"]
+                else:
+                    print("🔴 Refresh token expired. Reauthentication required.")
 
-                    for part in msg.walk():
-                        if part.get_content_type() == "text/plain":
-                            print(f"Contenu : {part.get_content()}")
-                        elif part.get_content_type() == "text/html":
-                            print(f"HTML : {part.get_content()[:500]}...")
-                print("[INFO] Emails récupérés avec succès.")
+        return self.authenticate_user()
 
-        except Exception as e:
-            print(f"[ERREUR] Problème lors de la récupération des emails : {e}")
+
+    def authenticate_user(self):
+        """Requests interactive authentication if necessary."""
+        flow = self.app.initiate_device_flow(scopes=self.scopes)
+        if "user_code" not in flow:
+            raise Exception("Failed to initialize Device Flow")
+
+        print(f"👉 Open {flow['verification_uri']} and use the code : {flow['user_code']}")
+
+        token_response = self.app.acquire_token_by_device_flow(flow)
+        if "access_token" in token_response:
+            self.save_token(token_response)
+            return token_response["access_token"]
+        else:
+            raise Exception(f"Authentication failed: {token_response.get('error_description', 'Unknown error')}")
+
+
+    def save_token(self, token_data):
+        """Saves the token locally to avoid reconnecting each time."""
+        with open(self.token_file, "w") as f:
+            json.dump(token_data, f)
+
+
+    def make_graph_request(self, endpoint):
+        """Executes a request to Microsoft Graph."""
+        import requests
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        response = requests.get(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers)
+        return response.json()
+    
+
+    def make_graph_request_pages(self, endpoint):
+        """Executes a request to the Microsoft Graph API with pagination handling."""
+        import requests
+
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        url = f"https://graph.microsoft.com/v1.0{endpoint}"
+        results = []
+
+        while url:
+            response = requests.get(url, headers=headers)
+            data = response.json()
+
+            if "value" in data:
+                results.extend(data["value"])
+
+            url = data.get("@odata.nextLink")
+
+        return results
+    
+    
+    def read_mail_folder(self, folder_id):
+        """Reads emails from a specified folder."""
+        
+        self.emails = []
+        
+        endpoint = f"/me/mailFolders/{folder_id}/messages"
+        all_emails = self.make_graph_request_pages(endpoint)
+
+        for e, i in enumerate(all_emails):
+            self.emails.append(OutlookMail(i["subject"], i["from"]["emailAddress"]["name"], i["receivedDateTime"], i["bodyPreview"]))
+
+
+    def list_mail_folders(self):
+        """Lists all mail folders in the mailbox."""
+        endpoint = "/me/mailFolders"
+        return self.make_graph_request(endpoint)
+    
+
+    def folder_id_by_name(self, folder_name):
+        """Returns the ID of a mail folder by its name."""
+        for folder in self.folders["value"]:
+            if folder["displayName"] == folder_name:
+                return folder["id"]
+        return None
+
+
+
+class OutlookMail():
+    def __init__(self, subject, name, receivedDateTime, bodyPreview):
+        self.name = name
+        self.subject = subject
+        self.receivedDateTime = receivedDateTime
+        self.bodyPreview = bodyPreview
+
+    
+    def to_html(self):
+        """Creates an HTML formatted text with all the email information."""
+        html_content = f"""
+        <html>
+            <body>
+                <h2>{self.subject}</h2>
+                <p><strong>From:</strong> {self.name}</p>
+                <p><strong>Received:</strong> {self.receivedDateTime}</p>
+                <p>{self.bodyPreview}</p>
+            </body>
+        </html>
+        """
+        return html_content
