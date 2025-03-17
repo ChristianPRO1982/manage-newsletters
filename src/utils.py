@@ -6,17 +6,18 @@ import datetime
 class Newsletter:
     def __init__(self, logs):
         self.logs = logs
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        self.content = self.head_body(today)
+        self.today = datetime.datetime.now().strftime("%Y-%m-%d")
+        self.content = ""
         self.to_recipients = os.getenv("EMAILS_TARGET")
-        self.subject = os.getenv("EMAIL_SUBJECT") + " - " + today
+        self.subject = os.getenv("EMAIL_SUBJECT") + " - " + self.today
+        self.list_emails_prossessed = []
 
 
     def connection(self)->str:
         prefix = f'[{self.__class__.__name__} | connection]'
 
         try:
-            self.logs.logging_msg(f"{prefix} Connection")
+            self.logs.logging_msg(f"{prefix} START")
 
             client = MicrosoftGraphClient()
             me = client.make_graph_request("/me")
@@ -37,15 +38,15 @@ class Newsletter:
             return None, e
         
 
-    def head_body(self, today: str)->str:
+    def head_body(self, today: str, email_subject: str)->str:
         prefix = f'[{self.__class__.__name__} | head_body]'
 
         try:
-            self.logs.logging_msg(f"{prefix} Head body", 'DEBUG')
+            self.logs.logging_msg(f"{prefix} start", 'DEBUG')
             return f"""
 <html>
     <body>
-        <H1>Newsletter du {today}</H1>
+        <H1>{email_subject} - {today}</H1>
         """
     
         except Exception as e:
@@ -57,7 +58,7 @@ class Newsletter:
         prefix = f'[{self.__class__.__name__} | foot_body]'
 
         try:
-            self.logs.logging_msg(f"{prefix} Foot body", 'DEBUG')
+            self.logs.logging_msg(f"{prefix} start", 'DEBUG')
             self.content += """
     </body>
 </html>
@@ -68,14 +69,17 @@ class Newsletter:
             return e
     
 
-    def create_email_body(self, emails)->str:
+    def create_email_body(self, emails, email_subject)->str:
         prefix = f'[{self.__class__.__name__} | create_email_body]'
 
         try:
-            self.logs.logging_msg(f"{prefix} Create email body")
+            self.logs.logging_msg(f"{prefix} START")
 
-            for mail in emails:
-                self.add_content(mail.to_html())
+            self.head_body(self.today, email_subject)
+
+            for email in emails:
+                if not self.add_content(email.to_html()):
+                    self.list_emails_prossessed.append(email.id)
             
             self.foot_body()
             
@@ -89,7 +93,7 @@ class Newsletter:
 
         try:
             self.content += content
-            self.logs.logging_msg(f"{prefix} Content added", 'DEBUG')
+            self.logs.logging_msg(f"{prefix} start", 'DEBUG')
             return None
         
         except Exception as e:
@@ -101,10 +105,11 @@ class Newsletter:
         prefix = f'[{self.__class__.__name__} | send_email]'
 
         try:
-            self.logs.logging_msg(f"{prefix} Send email")
+            self.logs.logging_msg(f"{prefix} START")
+            if os.getenv('DEBUG') != '0':
+                self.logs.logging_msg(f"{prefix} >>>DEBUG MODE<<<: Email not sent")
+                return None
 
-            print(">>>>>")
-            print(self.to_recipients)
             if client.send_email(self.subject, self.content, self.to_recipients):
                 return None
             else:
@@ -112,4 +117,20 @@ class Newsletter:
 
         except Exception as e:
             self.logs.logging_msg(f"{prefix} Error: {e}", 'ERROR')
+            return e
+        
+
+    def move_emails(self, client, archive_folder:str)->str:
+        prefix = f'[{self.__class__.__name__} | move_emails]'
+
+        try:
+            self.logs.logging_msg(f"{prefix} START")
+
+            # print(self.list_emails_prossessed)
+            print('>>>',client.folder_id_by_name(archive_folder))
+
+            return None
+        
+        except Exception as e:
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
             return e

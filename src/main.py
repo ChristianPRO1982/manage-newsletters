@@ -9,6 +9,11 @@ dotenv.load_dotenv(override=True)
 
 if __name__ == "__main__":
     logs = Logs()
+    FOLDER_SCANNED = os.getenv('FOLDER_SCANNED')
+    ARCHIVE_FOLDER = os.getenv('ARCHIVE_FOLDER')
+    EMAILS_RETENTION_DAYS = os.getenv('EMAILS_RETENTION_DAYS')
+    EMAIL_SUBJECT = os.getenv('EMAIL_SUBJECT')
+
     if not logs.status:
         logs.logging_msg("START PROGRAM", 'WARNING')
 
@@ -22,13 +27,15 @@ if __name__ == "__main__":
 
         # 02 FETCH EMAILS
         logs.logging_msg("MAIN.PY: Fetching")
-        client.read_mail_folder(client.folder_id_by_name("VEILLE"))
+        client.read_mail_folder(client.folder_id_by_name(FOLDER_SCANNED))
 
         # 03 CREATE A NEWSLETTER
-        if newsletter.create_email_body(client.emails):
-            exit()
+        if newsletter.create_email_body(client.emails, EMAIL_SUBJECT): exit()
 
         # 04 SEND EMAIL
-        newsletter.send_email(client)
+        if newsletter.send_email(client): exit()
+
+        # 05 MOVED EMAIL
+        newsletter.move_emails(client, ARCHIVE_FOLDER)
         
         logs.logging_msg("END PROGRAM", 'WARNING')

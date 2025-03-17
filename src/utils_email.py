@@ -95,18 +95,36 @@ class MicrosoftGraphClient:
         endpoint = f"/me/mailFolders/{folder_id}/messages"
         all_emails = self.make_graph_request_pages(endpoint)
 
-        for e, i in enumerate(all_emails):
-            self.emails.append(OutlookMail(i["subject"], i["from"]["emailAddress"]["name"], i["receivedDateTime"], i["bodyPreview"]))
+        for e, email in enumerate(all_emails):
+            self.emails.append(OutlookMail(
+                email["id"],
+                email["subject"],
+                email["from"]["emailAddress"]["name"],
+                email["receivedDateTime"],
+                email["bodyPreview"])
+                )
 
 
-    def list_mail_folders(self):
+    def list_mail_folders(self, folder_id=""):
         """Lists all mail folders in the mailbox."""
-        endpoint = "/me/mailFolders"
+
+        if folder_id:
+            endpoint = f"/me/mailFolders/{folder_id}/childFolders"
+        else:
+            endpoint = f"/me/mailFolders"
+        
+        folders = self.make_graph_request(endpoint)
+        for folder in folders['value']:
+            print("Folder:", folder['displayName'])
+            if folder['childFolderCount'] > 0:
+                folders['value'].extend(self.list_mail_folders(folder['id'])['value'])
+
         return self.make_graph_request(endpoint)
     
 
     def folder_id_by_name(self, folder_name):
         """Returns the ID of a mail folder by its name."""
+        print(folder_name, self.folders)
         for folder in self.folders["value"]:
             if folder["displayName"] == folder_name:
                 return folder["id"]
@@ -147,11 +165,32 @@ class MicrosoftGraphClient:
         else:
             print(f"Failed to send email: {response.status_code} - {response.text}")
             return False
+        
+
+    def move_email(self, email_id, destination_folder_id):
+        """Moves an email to a specified folder."""
+        
+        endpoint = f"/me/messages/{email_id}/move"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "destinationId": destination_folder_id
+        }
+
+        response = requests.post(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers, json=payload)
+        if response.status_code == 201:
+            return True
+        else:
+            print(f"Failed to move email: {response.status_code} - {response.text}")
+            return False
 
 
 
 class OutlookMail():
-    def __init__(self, subject, name, receivedDateTime, bodyPreview):
+    def __init__(self, id, subject, name, receivedDateTime, bodyPreview):
+        self.id = id
         self.name = name
         self.subject = subject
         self.receivedDateTime = receivedDateTime
