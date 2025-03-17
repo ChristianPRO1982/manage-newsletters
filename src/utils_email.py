@@ -113,18 +113,8 @@ class MicrosoftGraphClient:
         return None
     
 
-    def send_email(self, subject, content, to_recipients):
+    def send_email(self, subject, body, to_recipients):
         """Sends an email using Microsoft Graph API."""
-
-        body = f"""
-<html>
-    <body>
-        <h2>{subject}</h2>
-        <p><strong>Received:</strong> {to_recipients}</p>
-        <p>{content}</p>
-    </body>
-</html>
-        """
 
         endpoint = "/me/sendMail"
         headers = {
@@ -163,12 +153,12 @@ class OutlookMail():
         """Creates an HTML formatted text with all the email information."""
 
         html_content = f"""
-    <div>
-        <h2>{self.subject}</h2>
-        <p><strong>From:</strong> {self.name}</p>
-        <p><strong>Received:</strong> {self.receivedDateTime}</p>
-        <p>{self.bodyPreview}</p>
-    </div>
+        <div>
+            <h2>{self.subject}</h2>
+            <p><strong>From:</strong> {self.name}</p>
+            <p><strong>Received:</strong> {self.receivedDateTime}</p>
+            <p>{self.bodyPreview}</p>
+        </div>
         """
-        
+
         return html_content

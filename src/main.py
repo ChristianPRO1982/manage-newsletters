@@ -15,21 +15,16 @@ if __name__ == "__main__":
         newsletter = Newsletter(logs)
 
         # 01 CONNECTION
-        client, error = newsletter.connexion()
+        client, error = newsletter.connection()
         if error:
             logs.logging_msg(f"MAIN.PY: {error}", 'ERROR')
             exit()
 
-        # Fetch the latest emails
+        # 02 FETCH EMAILS
         logs.logging_msg("MAIN.PY: Fetching")
         client.read_mail_folder(client.folder_id_by_name("VEILLE"))
 
-        # Create a newsletter
-        logs.logging_msg("MAIN.PY: Creating newsletter")
-        for mail in client.emails:
-            newsletter.add_content(mail.to_html())
-        print(">>>>>")
-        print(newsletter.content)
-        print(">>>>>")
+        # 03 CREATE A NEWSLETTER
+        newsletter.create_email_body(client.emails)
         
         logs.logging_msg("END PROGRAM", 'WARNING')
