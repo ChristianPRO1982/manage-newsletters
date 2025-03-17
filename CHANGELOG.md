@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/ChristianPRO1982/manage-newsletters/compare/v1.1.0...v1.2.0) (2025-03-17)
+
+
+### Features
+
+* moved email ([dcb735b](https://github.com/ChristianPRO1982/manage-newsletters/commit/dcb735b2bad50ed844b728479b7d6c3769b1fc1c))
+
 # [1.1.0](https://github.com/ChristianPRO1982/manage-newsletters/compare/v1.0.1...v1.1.0) (2025-03-17)
 
 
