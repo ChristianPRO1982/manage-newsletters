@@ -113,7 +113,7 @@ class MicrosoftGraphClient:
         return None
     
 
-    def send_email(self, subject, body, to_recipients):
+    def send_email(self, subject, body, to_recipients)->bool:
         """Sends an email using Microsoft Graph API."""
 
         endpoint = "/me/sendMail"
@@ -134,10 +134,11 @@ class MicrosoftGraphClient:
         }
 
         response = requests.post(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers, json=email_msg)
-        if response.status_code == 202:
-            print("Email sent successfully.")
+        if response.status_code == 202 or response.status_code == 200:
+            return True
         else:
             print(f"Failed to send email: {response.status_code} - {response.text}")
+            return False
 
 
 

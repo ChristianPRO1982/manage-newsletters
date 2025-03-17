@@ -25,6 +25,10 @@ if __name__ == "__main__":
         client.read_mail_folder(client.folder_id_by_name("VEILLE"))
 
         # 03 CREATE A NEWSLETTER
-        newsletter.create_email_body(client.emails)
+        if newsletter.create_email_body(client.emails):
+            exit()
+
+        # 04 SEND EMAIL
+        newsletter.send_email(client)
         
         logs.logging_msg("END PROGRAM", 'WARNING')
