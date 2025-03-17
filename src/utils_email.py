@@ -1,139 +1,119 @@
+import json
 import os
-import dotenv
-import requests
 from msal import PublicClientApplication
-from datetime import datetime, timedelta
 
-# Charger les variables d'environnement
-dotenv.load_dotenv(override=True)
 
-class GraphAuth:
-    """Gère l'authentification OAuth2 via Device Code Flow pour Microsoft Graph API."""
-    
+class MicrosoftGraphClient:
     def __init__(self):
         self.client_id = os.getenv("AZURE_APP_APPLICATION_CLIENT_ID")
-        self.tenant_id = "common"  # Mettre l'ID de ton tenant si besoin
+        self.tenant_id = "common"  # Replace with your tenant ID if necessary
         self.authority = f"https://login.microsoftonline.com/{self.tenant_id}"
         self.scopes = ["https://graph.microsoft.com/.default"]
-        self.access_token = None
-        self.authenticate()
+        self.token_file = "token.json"
+        self.app = PublicClientApplication(self.client_id, authority=self.authority)
+        self.access_token = self.load_token()
+        self.folders = self.list_mail_folders()
+        emails = []
 
-    def authenticate(self):
-        """Lance le Device Code Flow et récupère un token d'accès."""
-        app = PublicClientApplication(self.client_id, authority=self.authority)
-        flow = app.initiate_device_flow(scopes=self.scopes)
 
+    def load_token(self):
+        """Loads a valid token or requests authentication if necessary."""
+        if os.path.exists(self.token_file):
+            with open(self.token_file, "r") as f:
+                token_data = json.load(f)
+
+            if "access_token" in token_data:
+                return token_data["access_token"]
+
+            if "refresh_token" in token_data:
+                new_token = self.app.acquire_token_by_refresh_token(token_data["refresh_token"], self.scopes)
+                if "access_token" in new_token:
+                    self.save_token(new_token)
+                    return new_token["access_token"]
+                else:
+                    print("🔴 Refresh token expired. Reauthentication required.")
+
+        return self.authenticate_user()
+
+
+    def authenticate_user(self):
+        """Requests interactive authentication if necessary."""
+        flow = self.app.initiate_device_flow(scopes=self.scopes)
         if "user_code" not in flow:
-            raise Exception("⚠️ Erreur lors de l'initiation du Device Code Flow.")
+            raise Exception("Failed to initialize Device Flow")
 
-        print(f"🔑 Allez sur {flow['verification_uri']} et entrez le code : {flow['user_code']}")
+        print(f"👉 Open {flow['verification_uri']} and use the code : {flow['user_code']}")
 
-        token_response = app.acquire_token_by_device_flow(flow)
+        token_response = self.app.acquire_token_by_device_flow(flow)
         if "access_token" in token_response:
-            self.access_token = token_response["access_token"]
+            self.save_token(token_response)
+            return token_response["access_token"]
         else:
-            raise Exception("❌ Authentification échouée.")
-
-    def get_headers(self):
-        """Retourne les headers pour les requêtes à l'API Graph."""
-        return {"Authorization": f"Bearer {self.access_token}", "Content-Type": "application/json"}
+            raise Exception(f"Authentication failed: {token_response.get('error_description', 'Unknown error')}")
 
 
-class EmailManager:
-    """Gère les emails via Microsoft Graph API."""
+    def save_token(self, token_data):
+        """Saves the token locally to avoid reconnecting each time."""
+        with open(self.token_file, "w") as f:
+            json.dump(token_data, f)
+
+
+    def make_graph_request(self, endpoint):
+        """Executes a request to Microsoft Graph."""
+        import requests
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        response = requests.get(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers)
+        return response.json()
     
-    BASE_URL = "https://graph.microsoft.com/v1.0/me"
+    
+    def make_graph_request_pages(self, endpoint):
+        """Executes a request to the Microsoft Graph API with pagination handling."""
+        import requests
 
-    def __init__(self, auth):
-        self.auth = auth
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        url = f"https://graph.microsoft.com/v1.0{endpoint}"
+        results = []
 
-    def list_emails(self, folder="Inbox", limit=10):
-        """Récupère les emails d'un dossier spécifique."""
-        url = f"{self.BASE_URL}/mailFolders/{folder}/messages?$top={limit}"
-        response = requests.get(url, headers=self.auth.get_headers())
+        while url:
+            response = requests.get(url, headers=headers)
+            data = response.json()
 
-        if response.status_code == 200:
-            emails = response.json().get("value", [])
-            return [{"id": email["id"], "subject": email["subject"]} for email in emails]
-        else:
-            raise Exception(f"⚠️ Erreur lors de la récupération des emails: {response.text}")
+            if "value" in data:
+                results.extend(data["value"])
 
-    def send_email(self, recipient, subject, body):
-        """Envoie un email à un destinataire."""
-        url = f"{self.BASE_URL}/sendMail"
-        email_data = {
-            "message": {
-                "subject": subject,
-                "body": {"contentType": "Text", "content": body},
-                "toRecipients": [{"emailAddress": {"address": recipient}}],
-            },
-            "saveToSentItems": "true",
-        }
-        response = requests.post(url, headers=self.auth.get_headers(), json=email_data)
+            url = data.get("@odata.nextLink")
 
-        if response.status_code == 202:
-            print("✅ Email envoyé avec succès !")
-        else:
-            raise Exception(f"⚠️ Erreur lors de l'envoi de l'email: {response.text}")
+        return results
+    
+    
+    def read_mail_folder(self, folder_id):
+        """Reads emails from a specified folder."""
+        
+        self.emails = []
+        
+        endpoint = f"/me/mailFolders/{folder_id}/messages"
+        all_emails = self.make_graph_request2(endpoint)
 
-    def move_email(self, email_id, target_folder):
-        """Déplace un email d’un dossier à un autre."""
-        url = f"{self.BASE_URL}/messages/{email_id}/move"
-        payload = {"destinationId": target_folder}
-        response = requests.post(url, headers=self.auth.get_headers(), json=payload)
-
-        if response.status_code == 201:
-            print(f"✅ Email déplacé vers {target_folder}.")
-        else:
-            raise Exception(f"⚠️ Erreur lors du déplacement de l'email: {response.text}")
-
-    def delete_old_emails(self, folder="Inbox", days_old=30):
-        """Supprime les emails plus anciens que X jours dans un dossier donné."""
-        url = f"{self.BASE_URL}/mailFolders/{folder}/messages"
-        response = requests.get(url, headers=self.auth.get_headers())
-
-        if response.status_code == 200:
-            emails = response.json().get("value", [])
-            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
-
-            for email in emails:
-                email_date = datetime.strptime(email["receivedDateTime"], "%Y-%m-%dT%H:%M:%SZ")
-                if email_date < cutoff_date:
-                    delete_url = f"{self.BASE_URL}/messages/{email['id']}"
-                    delete_response = requests.delete(delete_url, headers=self.auth.get_headers())
-
-                    if delete_response.status_code == 204:
-                        print(f"🗑️ Email supprimé : {email['subject']} ({email_date})")
-                    else:
-                        print(f"⚠️ Erreur suppression {email['subject']}: {delete_response.text}")
-
-        else:
-            raise Exception(f"⚠️ Erreur récupération emails : {response.text}")
+        for e, i in enumerate(all_emails):
+            print(e, i["subject"])
+        # return all_emails
 
 
-# 📌 EXEMPLE D'UTILISATION
-if __name__ == "__main__":
-    print("START")
+    def list_mail_folders(self):
+        """Lists all mail folders in the mailbox."""
+        endpoint = "/me/mailFolders"
+        return self.make_graph_request(endpoint)
+    
 
-    auth = GraphAuth()  # Authentification
-    email_manager = EmailManager(auth)
+    def folder_id_by_name(self, folder_name):
+        """Returns the ID of a mail folder by its name."""
+        for folder in self.folders["value"]:
+            if folder["displayName"] == folder_name:
+                return folder["id"]
+        return None
 
-    # 📨 Lister les emails
-    print("PJ 📨 Récupération des emails...")
-    emails = email_manager.list_emails(limit=5)
-    print("📩 Emails reçus :", emails)
 
-    # ✉️ Envoyer un email
-    print("PJ ✉️ Envoi d'un email...")
-    EMAIL_TARGET = os.getenv("EMAIL_TARGET")
-    email_manager.send_email(EMAIL_TARGET, "Test API", "Hello, ceci est un test !")
 
-    # 📂 Déplacer un email
-    # if emails:
-    #     email_id = emails[0]["id"]
-    #     email_manager.move_email(email_id, "Archives")
-
-    # 🗑️ Supprimer les emails trop vieux
-    # email_manager.delete_old_emails(days_old=60)
-
-    print("END")
+class OutlookMail():
+    def __init__(self):
+        pass

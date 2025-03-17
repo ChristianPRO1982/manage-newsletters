@@ -1,15 +1,15 @@
 import os
 import dotenv
-from utils_email import OutlookMailFetcher
+from utils_email import MicrosoftGraphClient
 from logs import Logs
 
 
 dotenv.load_dotenv(override=True)
-EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
-PASSWORD = os.getenv("PASSWORD")
-CLIENT_ID = os.getenv("AZURE_APP_APPLICATION_CLIENT_ID")
-TENANT_ID = os.getenv("AZURE_APP_DIRECTORY_TENANT_ID")
-CLIENT_SECRET = os.getenv("AZURE_SECRET_VALUE")
+# EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
+# PASSWORD = os.getenv("PASSWORD")
+# CLIENT_ID = os.getenv("AZURE_APP_APPLICATION_CLIENT_ID")
+# TENANT_ID = os.getenv("AZURE_APP_DIRECTORY_TENANT_ID")
+# CLIENT_SECRET = os.getenv("AZURE_SECRET_VALUE")
 
 
 if __name__ == "__main__":
@@ -17,17 +17,16 @@ if __name__ == "__main__":
     if not logs.status:
         logs.logging_msg("START PROGRAM", 'WARNING')
 
-        TENANT_ID = "common"  # 'common' for personal Outlook accounts
+        # TENANT_ID = "common"  # 'common' for personal Outlook accounts
 
         # Create an instance of OutlookMailFetcher
-        logs.logging_msg("MAIN.PY: Create instance", 'DEBUG')
-        logs.logging_msg(f"MAIN.PY: TENANT_ID: {TENANT_ID}", 'DEBUG')
-        outlook = OutlookMailFetcher(CLIENT_ID, TENANT_ID, CLIENT_SECRET)
-        logs.logging_msg(f"outlook: {outlook.access_token}")
+        logs.logging_msg("MAIN.PY: Connexion")
+        client = MicrosoftGraphClient()
+        me = client.make_graph_request("/me")
 
-        # Fetch the latest 5 emails
-        # logs.logging_msg("MAIN.PY: Fetching", 'DEBUG')
-        # emails = outlook.get_emails(count=2)
+        # Fetch the latest emails
+        logs.logging_msg("MAIN.PY: Fetching")
+        logs.logging_msg(client.read_mail_folder(client.folder_id_by_name("VEILLE")))
         # logs.logging_msg(emails)
 
         # Send an email
