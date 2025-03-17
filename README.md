@@ -1,9 +1,9 @@
 # manage-newsletters
 tool for compiling newsletters into a single one
 
-[![Latest Release](https://img.shields.io/github/release/ChristianPRO1982/ai-subject-monitoring-project.svg)](https://github.com/ChristianPRO1982/ai-subject-monitoring-project/releases/latest)
+[![Latest Release](https://img.shields.io/github/release/ChristianPRO1982/manage-newsletters.svg)](https://github.com/ChristianPRO1982/manage-newsletters/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/github/license/ChristianPRO1982/ai-subject-monitoring-project.svg)](https://github.com/ChristianPRO1982/ai-subject-monitoring-project/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/ChristianPRO1982/ai-subject-monitoring-project.svg)](https://github.com/ChristianPRO1982/manage-newsletters/blob/main/LICENSE)
 
 [Flowchart](https://github.com/ChristianPRO1982/ai-subject-monitoring-project?tab=readme-ov-file#MN-flowchart)
 
