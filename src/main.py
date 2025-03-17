@@ -26,7 +26,9 @@ if __name__ == "__main__":
 
         # Fetch the latest emails
         logs.logging_msg("MAIN.PY: Fetching")
-        logs.logging_msg(client.read_mail_folder(client.folder_id_by_name("VEILLE")))
+        client.read_mail_folder(client.folder_id_by_name("VEILLE"))
+        for email in client.emails:
+            logs.logging_msg(email.to_html())
         # logs.logging_msg(emails)
 
         # Send an email

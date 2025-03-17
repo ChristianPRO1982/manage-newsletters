@@ -13,7 +13,7 @@ class MicrosoftGraphClient:
         self.app = PublicClientApplication(self.client_id, authority=self.authority)
         self.access_token = self.load_token()
         self.folders = self.list_mail_folders()
-        emails = []
+        self.emails = []
 
 
     def load_token(self):
@@ -65,7 +65,7 @@ class MicrosoftGraphClient:
         response = requests.get(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers)
         return response.json()
     
-    
+
     def make_graph_request_pages(self, endpoint):
         """Executes a request to the Microsoft Graph API with pagination handling."""
         import requests
@@ -92,11 +92,10 @@ class MicrosoftGraphClient:
         self.emails = []
         
         endpoint = f"/me/mailFolders/{folder_id}/messages"
-        all_emails = self.make_graph_request2(endpoint)
+        all_emails = self.make_graph_request_pages(endpoint)
 
         for e, i in enumerate(all_emails):
-            print(e, i["subject"])
-        # return all_emails
+            self.emails.append(OutlookMail(i["subject"], i["from"]["emailAddress"]["name"], i["receivedDateTime"], i["bodyPreview"]))
 
 
     def list_mail_folders(self):
@@ -115,5 +114,23 @@ class MicrosoftGraphClient:
 
 
 class OutlookMail():
-    def __init__(self):
-        pass
+    def __init__(self, subject, name, receivedDateTime, bodyPreview):
+        self.name = name
+        self.subject = subject
+        self.receivedDateTime = receivedDateTime
+        self.bodyPreview = bodyPreview
+
+    
+    def to_html(self):
+        """Creates an HTML formatted text with all the email information."""
+        html_content = f"""
+        <html>
+            <body>
+                <h2>{self.subject}</h2>
+                <p><strong>From:</strong> {self.name}</p>
+                <p><strong>Received:</strong> {self.receivedDateTime}</p>
+                <p>{self.bodyPreview}</p>
+            </body>
+        </html>
+        """
+        return html_content
