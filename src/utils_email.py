@@ -97,13 +97,16 @@ class MicrosoftGraphClient:
         all_emails = self.make_graph_request_pages(endpoint)
 
         for e, email in enumerate(all_emails):
+            body = email["body"]
             self.emails.append(OutlookMail(
+                e + 1,
                 email["id"],
                 email["subject"],
                 email["from"]["emailAddress"]["name"],
                 email["receivedDateTime"],
-                email["bodyPreview"])
-                )
+                email["bodyPreview"],
+                body["content"]
+                ))
 
 
     def list_mail_folders(self, folder_id=""):
@@ -214,12 +217,14 @@ class MicrosoftGraphClient:
 
 
 class OutlookMail():
-    def __init__(self, id, subject, name, receivedDateTime, bodyPreview):
+    def __init__(self, num, id, subject, name, receivedDateTime, bodyPreview, body):
+        self.num = num
         self.id = id
         self.name = name
         self.subject = subject
         self.receivedDateTime = receivedDateTime
         self.bodyPreview = bodyPreview
+        self.body = body
 
     
     def to_html(self):
@@ -230,7 +235,7 @@ class OutlookMail():
             <h2>{self.subject}</h2>
             <p><strong>From:</strong> {self.name}</p>
             <p><strong>Received:</strong> {self.receivedDateTime}</p>
-            <p>{self.bodyPreview}</p>
+            <p>{self.body}</p>
         </div>
         """
 
