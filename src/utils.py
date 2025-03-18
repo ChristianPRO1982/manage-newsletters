@@ -67,6 +67,18 @@ class Newsletter:
         except Exception as e:
             self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
             return e
+        
+
+    def fetch_emails(self, client, folder_scanned:str)->str:
+        prefix = f'[{self.__class__.__name__} | fetch_emails]'
+
+        try:
+            self.logs.logging_msg(f"{prefix} START")
+            client.read_mail_folder(client.folder_id_by_name(folder_scanned))
+
+        except Exception as e:
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'ERROR')
+            return e
     
 
     def create_email_body(self, emails, email_subject)->str:

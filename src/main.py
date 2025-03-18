@@ -26,8 +26,7 @@ if __name__ == "__main__":
             exit()
 
         # 02 FETCH EMAILS
-        logs.logging_msg("MAIN.PY: Fetching")
-        client.read_mail_folder(client.folder_id_by_name(FOLDER_SCANNED))
+        if newsletter.fetch_emails(client, FOLDER_SCANNED): exit()
 
         # 03 CREATE A NEWSLETTER
         if newsletter.create_email_body(client.emails, EMAIL_SUBJECT): exit()
