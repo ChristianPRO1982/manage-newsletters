@@ -1,3 +1,19 @@
+# [1.3.0](https://github.com/ChristianPRO1982/manage-newsletters/compare/v1.2.0...v1.3.0) (2025-03-18)
+
+
+### Bug Fixes
+
+* # 02 FETCH EMAILS with POO ([ba66ce3](https://github.com/ChristianPRO1982/manage-newsletters/commit/ba66ce376d1bb847687573e43a9abb3951e16aad))
+* logs levels ([b9cf146](https://github.com/ChristianPRO1982/manage-newsletters/commit/b9cf1462d3c486911963ccc206cca17aab8a7bdd))
+* moved emails: new file and folder management ([2c7f820](https://github.com/ChristianPRO1982/manage-newsletters/commit/2c7f82027d25288c3e47d5edcc06c6665a772407))
+* multiple emails send ([d1a87aa](https://github.com/ChristianPRO1982/manage-newsletters/commit/d1a87aa8cfb4574f242c3ccb624fc6323d633557))
+* send email: head body add + NL bodyPreview > NL body ([d5b6e3e](https://github.com/ChristianPRO1982/manage-newsletters/commit/d5b6e3ee62f69842a3f7993edae7ca3c4527475c))
+
+
+### Features
+
+* delete old emails ([2b2fbe0](https://github.com/ChristianPRO1982/manage-newsletters/commit/2b2fbe09d3b3a5f371cd4308e8cca5a50444ed3c))
+
 # [1.2.0](https://github.com/ChristianPRO1982/manage-newsletters/compare/v1.1.0...v1.2.0) (2025-03-17)
 
 
