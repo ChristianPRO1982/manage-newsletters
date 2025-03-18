@@ -227,15 +227,22 @@ class OutlookMail():
         self.body = body
 
     
-    def to_html(self):
+    def to_html(self, preview):
         """Creates an HTML formatted text with all the email information."""
+
+        if preview:
+            content = self.bodyPreview
+            h = "h3"
+        else:
+            content = self.body
+            h = "h2"
 
         html_content = f"""
         <div>
-            <h2>{self.subject}</h2>
+            <{h}>{self.subject}</{h}>
             <p><strong>From:</strong> {self.name}</p>
             <p><strong>Received:</strong> {self.receivedDateTime}</p>
-            <p>{self.body}</p>
+            <p>{content}</p>
         </div>
         """
 

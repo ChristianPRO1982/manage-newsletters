@@ -92,8 +92,20 @@ class Newsletter:
 
             self.head_body(self.today, email_subject)
 
+            self.content += f"""
+        <h2>Résumés</h2>
+            """
+
             for email in emails:
-                if not self.add_content(email.to_html()):
+                if not self.add_content(email.to_html(True)):
+                    self.list_emails_id_prossessed.append(email.id)
+            
+            self.content += f"""
+        <hr>
+            """
+
+            for email in emails:
+                if not self.add_content(email.to_html(False)):
                     self.list_emails_id_prossessed.append(email.id)
             
             self.foot_body()
