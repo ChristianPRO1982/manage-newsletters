@@ -1,12 +1,13 @@
 from utils_email import MicrosoftGraphClient
 import os
-import datetime
+from datetime import datetime, timedelta
+
 
 
 class Newsletter:
     def __init__(self, logs):
         self.logs = logs
-        self.today = datetime.datetime.now().strftime("%Y-%m-%d")
+        self.today = datetime.now().strftime("%Y-%m-%d")
         self.content = ""
         self.to_recipients = os.getenv("EMAILS_TARGET")
         self.subject = os.getenv("EMAIL_SUBJECT") + " - " + self.today
@@ -38,6 +39,18 @@ class Newsletter:
             return None, e
         
 
+    def fetch_emails(self, client, folder_scanned:str)->str:
+        prefix = f'[{self.__class__.__name__} | fetch_emails]'
+
+        try:
+            self.logs.logging_msg(f"{prefix} START")
+            client.read_mail_folder(client.folder_id_by_name(folder_scanned))
+
+        except Exception as e:
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'ERROR')
+            return e
+        
+
     def head_body(self, today: str, email_subject: str)->str:
         prefix = f'[{self.__class__.__name__} | head_body]'
 
@@ -66,18 +79,6 @@ class Newsletter:
 
         except Exception as e:
             self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
-            return e
-        
-
-    def fetch_emails(self, client, folder_scanned:str)->str:
-        prefix = f'[{self.__class__.__name__} | fetch_emails]'
-
-        try:
-            self.logs.logging_msg(f"{prefix} START")
-            client.read_mail_folder(client.folder_id_by_name(folder_scanned))
-
-        except Exception as e:
-            self.logs.logging_msg(f"{prefix} Error: {e}", 'ERROR')
             return e
     
 
@@ -153,3 +154,48 @@ class Newsletter:
         except Exception as e:
             self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
             return e
+        
+
+    def delete_old_emails(self, client, archive_folder:str, emails_retention_days:str)->str:
+        prefix = f'[{self.__class__.__name__} | move_emails]'
+
+        try:
+            self.logs.logging_msg(f"{prefix} START")
+
+            if os.getenv('DEBUG') == '0':
+                deleting = True
+            else:
+                deleting = False
+                self.logs.logging_msg(f"{prefix} >>>DEBUG MODE<<<: Emails not deleted but logged")
+            
+            client.read_mail_folder(client.folder_id_by_name(archive_folder))
+            
+            for email in client.emails:
+                if self.is_date_expired(email.receivedDateTime, int(emails_retention_days)):
+                    if deleting:
+                        if client.delete_email(email.id):
+                            self.logs.logging_msg(f"{prefix} Email '{email.subject}' deleted", 'DEBUG')
+                        else:
+                            self.logs.logging_msg(f"{prefix} Email '{email.subject}' not deleted", 'WARNING')
+                    else:
+                        self.logs.logging_msg(f"{prefix} Email [{email.receivedDateTime}] '{email.subject}' would be deleted", 'DEBUG')
+
+            return None
+        
+        except Exception as e:
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
+            return e
+        
+
+    def is_date_expired(self, date_str: str, days_threshold: int) -> bool:
+        prefix = f'[{self.__class__.__name__} | is_date_expired]'
+
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
+            threshold_date = datetime.utcnow() - timedelta(days=days_threshold)
+
+            return date_obj < threshold_date
+        
+        except Exception as e:
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
+            return False
