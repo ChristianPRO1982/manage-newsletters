@@ -10,7 +10,7 @@ class Newsletter:
         self.content = ""
         self.to_recipients = os.getenv("EMAILS_TARGET")
         self.subject = os.getenv("EMAIL_SUBJECT") + " - " + self.today
-        self.list_emails_prossessed = []
+        self.list_emails_id_prossessed = []
 
 
     def connection(self)->str:
@@ -31,7 +31,7 @@ class Newsletter:
                 if "error" in me:
                     self.logs.logging_msg(f"{prefix} Refresh Authentication failed", 'ERROR')
                     raise "Authentication failed"
-
+            
             return client, None
         
         except Exception as e:
@@ -79,7 +79,7 @@ class Newsletter:
 
             for email in emails:
                 if not self.add_content(email.to_html()):
-                    self.list_emails_prossessed.append(email.id)
+                    self.list_emails_id_prossessed.append(email.id)
             
             self.foot_body()
             
@@ -126,8 +126,15 @@ class Newsletter:
         try:
             self.logs.logging_msg(f"{prefix} START")
 
-            # print(self.list_emails_prossessed)
-            print('>>>',client.folder_id_by_name(archive_folder))
+            if os.getenv('DEBUG') != '0':
+                self.logs.logging_msg(f"{prefix} >>>DEBUG MODE<<<: target folder: '{archive_folder}' > '" + os.getenv('ARCHIVE_FOLDER_TEST') + "'")
+                archive_folder = os.getenv('ARCHIVE_FOLDER_TEST')
+            
+            for email_id in self.list_emails_id_prossessed:
+                if client.move_email(email_id, client.folder_id_by_name(archive_folder)):
+                    self.logs.logging_msg(f"{prefix} Email {email_id} moved to {archive_folder}", 'DEBUG')
+                else:
+                    self.logs.logging_msg(f"{prefix} Email {email_id} not moved to {archive_folder}", 'WARNING')
 
             return None
         

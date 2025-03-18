@@ -14,7 +14,8 @@ class MicrosoftGraphClient:
         self.token_file = "token.json"
         self.app = PublicClientApplication(self.client_id, authority=self.authority)
         self.access_token = self.load_token()
-        self.folders = self.list_mail_folders()
+        self.folders = []
+        self.list_mail_folders()
         self.emails = []
 
 
@@ -111,21 +112,25 @@ class MicrosoftGraphClient:
         if folder_id:
             endpoint = f"/me/mailFolders/{folder_id}/childFolders"
         else:
+            self.folders = []
             endpoint = f"/me/mailFolders"
         
         folders = self.make_graph_request(endpoint)
         for folder in folders['value']:
-            print("Folder:", folder['displayName'])
+            # print('>FOLDER>', folder['displayName'], folder['id'])
+            self.folders.append({
+                    "id": folder["id"],
+                    "displayName": folder["displayName"],
+                })
+            
             if folder['childFolderCount'] > 0:
-                folders['value'].extend(self.list_mail_folders(folder['id'])['value'])
-
-        return self.make_graph_request(endpoint)
+                self.list_mail_folders(folder['id'])
     
 
     def folder_id_by_name(self, folder_name):
         """Returns the ID of a mail folder by its name."""
-        print(folder_name, self.folders)
-        for folder in self.folders["value"]:
+        # print('>FOLDERS>',folder_name, self.folders)
+        for folder in self.folders:
             if folder["displayName"] == folder_name:
                 return folder["id"]
         return None
@@ -184,6 +189,22 @@ class MicrosoftGraphClient:
             return True
         else:
             print(f"Failed to move email: {response.status_code} - {response.text}")
+            return False
+        
+
+    def delete_email(self, email_id):
+        """Deletes an email by its ID."""
+        
+        endpoint = f"/me/messages/{email_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}"
+        }
+
+        response = requests.delete(f"https://graph.microsoft.com/v1.0{endpoint}", headers=headers)
+        if response.status_code == 204:
+            return True
+        else:
+            print(f"Failed to delete email: {response.status_code} - {response.text}")
             return False
 
 
