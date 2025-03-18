@@ -102,6 +102,10 @@ class Newsletter:
             
             self.content += f"""
         <hr>
+        <hr>
+        <hr>
+        <hr>
+        <hr>
             """
 
             for email in emails:

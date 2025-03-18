@@ -233,9 +233,11 @@ class OutlookMail():
         if preview:
             content = self.bodyPreview
             h = "h3"
+            hr = ""
         else:
             content = self.body
             h = "h2"
+            hr = "<hr>"
 
         html_content = f"""
         <div>
@@ -244,6 +246,7 @@ class OutlookMail():
             <p><strong>Received:</strong> {self.receivedDateTime}</p>
             <p>{content}</p>
         </div>
+        {hr}
         """
 
         return html_content

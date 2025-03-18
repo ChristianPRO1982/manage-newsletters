@@ -35,7 +35,7 @@ if __name__ == "__main__":
         if newsletter.send_email(client): exit()
 
         # 05 MOVED EMAIL
-        # newsletter.move_emails(client, ARCHIVE_FOLDER)
+        newsletter.move_emails(client, ARCHIVE_FOLDER)
 
         # 06 DELETE EMAILS
         newsletter.delete_old_emails(client, ARCHIVE_FOLDER, EMAILS_RETENTION_DAYS)
