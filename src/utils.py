@@ -1,5 +1,5 @@
 from utils_email import MicrosoftGraphClient
-import os
+import os, re
 from datetime import datetime, timedelta
 
 
@@ -9,7 +9,7 @@ class Newsletter:
         self.logs = logs
         self.today = datetime.now().strftime("%Y-%m-%d")
         self.content = ""
-        self.to_recipients = os.getenv("EMAILS_TARGET")
+        self.to_recipients = self.to_recipients_format(os.getenv("EMAILS_TARGET"))
         self.subject = os.getenv("EMAIL_SUBJECT") + " - " + self.today
         self.list_emails_id_prossessed = []
 
@@ -56,11 +56,13 @@ class Newsletter:
 
         try:
             self.logs.logging_msg(f"{prefix} start", 'DEBUG')
-            return f"""
+            self.content = f"""
 <html>
     <body>
         <H1>{email_subject} - {today}</H1>
         """
+
+            return None
     
         except Exception as e:
             self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
@@ -131,6 +133,28 @@ class Newsletter:
         except Exception as e:
             self.logs.logging_msg(f"{prefix} Error: {e}", 'ERROR')
             return e
+        
+
+    def to_recipients_format(self, to_recipients: str)->list:
+        prefix = f'[{self.__class__.__name__} | to_recipients_format]'
+
+        try:
+            self.logs.logging_msg(f"{prefix} start", 'DEBUG')
+
+            emails = []
+
+            for email in re.split(r"[,/;]", to_recipients):
+                if re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                    emails.append(email)
+                    self.logs.logging_msg(f"{prefix} Valid email: {email}", 'DEBUG')
+                else:
+                    self.logs.logging_msg(f"{prefix} Invalid email format: {email}", 'WARNING')
+
+            return emails
+        
+        except Exception as e:
+            self.logs.logging_msg(f"{prefix} Error: {e}", 'WARNING')
+            return to_recipients
         
 
     def move_emails(self, client, archive_folder:str)->str:
